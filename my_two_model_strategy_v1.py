@@ -660,7 +660,7 @@ def weekly_log():
     df['Strategy'] = [x for x in log['Strategy']]
     df = df[['Benchmark', 'Strategy']]
     df.plot(figsize=(10, 6), title='Performance')
-    logger.debug(f'== Benchmark: {(df['Benchmark'].iat[-1] - 1) * 100: .3f} % Gain')
+    logger.debug(f"== Benchmark: {(df['Benchmark'].iat[-1] - 1) * 100: .3f} % Gain")
 
 # ----------------------------------
 
