@@ -9,6 +9,7 @@ import datetime
 from datetime import datetime, timedelta
 from pytz import timezone
 import logging
+import smtplib
 import joblib
 import yfinance as yf
 import akshare as ak
@@ -68,6 +69,8 @@ class Client:
         self.total = cash
         
     def buy(self, stock, price, shares):
+        content = f'Buy: {stock}, at {price}, for {shares}'
+        send_email(content, content)
         if shares == 0 or self.cash < price * shares: return
         self.cash -= price * shares
         if stock not in self.holds: 
@@ -79,6 +82,8 @@ class Client:
         self.history.append([today, 'buy', stock, price, shares])
         
     def sell(self, stock, price, shares=None):
+        content = f'Sell: {stock}, at {price}, for {shares}'
+        send_email(content, content)
         if shares == 0 or self.holds.get(stock, None) is None: return
         if shares is None or shares >= self.holds[stock][0]: 
             shares = self.holds[stock][0]
@@ -99,6 +104,8 @@ class Client:
         
     def daily_update(self):
         if today.isoweekday() in [6, 7]: return
+        content = f'==== {today} ====\nHolds: {self.holds}\nCash: {self.cash}\nTotal: {self.total}\n\n'
+        send_email(f'{today} Log', content)
         logger.debug(f'==== {today} ====')
         logger.debug(f'== Holds:')
         total, close = 0.0, False
@@ -662,6 +669,24 @@ def weekly_log():
     df.plot(figsize=(10, 6), title='Performance')
     logger.debug(f"== Benchmark: {(df['Benchmark'].iat[-1] - 1) * 100: .3f} % Gain")
 
+# https://stackoverflow.com/questions/10147455/how-to-send-an-email-with-gmail-as-provider-using-python
+def send_email(subject, body):    
+    gmail_user = 'john.sun.ca@gmail.com'
+    gmail_app_password = 'ddub ojop flwo ythi'
+    sent_from = gmail_user
+    sent_to = ['john.sun.ca@gmail.com', ]
+    sent_subject = subject
+    sent_body = body    
+    email_text = f'From: {sent_from}\nTo: {sent_to}\nSubject: {sent_subject}\n\n{sent_body}'
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.ehlo()
+        server.login(gmail_user, gmail_app_password)
+        server.sendmail(sent_from, sent_to, email_text)
+        server.close()   
+        logger.debug(f'Email sent: {subject}')
+    except Exception as ex:
+        logger.debug(f'Email error: {str(ex)}')
 # ----------------------------------
 
 logger = logging.getLogger(__name__)
@@ -736,4 +761,3 @@ while True:
     except Exception as ex:
         logger.debug(str(ex))
     time.sleep(60*60)
-
